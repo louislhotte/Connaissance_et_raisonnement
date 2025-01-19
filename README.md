@@ -32,6 +32,149 @@ The allocation of clients to delivery personnel is modeled as a constraint satis
 ### 4.3 Evaluation Metrics
 The performance of the proposed optimization framework is evaluated based on delivery time efficiency, computational scalability, and adherence to constraints. Comparative analysis with linear programming approaches is conducted to benchmark effectiveness.
 
+### 4.4 Modeling the Optimization Problem with GOPHERSAT
+
+To effectively utilize GOPHERSAT for optimizing delivery routes, it is essential to accurately model the problem as a Boolean satisfiability (SAT) instance. This involves defining the necessary variables and constraints that represent the delivery operations. This section outlines the modeling approach, detailing the variables, constraints, and the process of constructing the corresponding Conjunctive Normal Form (CNF) for GOPHERSAT.
+
+#### 4.4.1 Variables
+
+Variables in the SAT model represent decisions that need to be made to optimize the delivery routes. For this problem, the primary variables include:
+
+1. **Assignment Variables (\(A_{i,j}\))**:
+   - **Definition**: Binary variables indicating whether delivery person \(i\) is assigned to client \(j\).
+   - **Domain**: \(A_{i,j} \in \{0, 1\}\)
+   - **Interpretation**: \(A_{i,j} = 1\) if delivery person \(i\) is assigned to client \(j\), otherwise \(0\).
+
+2. **Sequencing Variables (\(S_{i,j,k}\))**:
+   - **Definition**: Binary variables indicating whether client \(j\) is visited immediately before client \(k\) by delivery person \(i\).
+   - **Domain**: \(S_{i,j,k} \in \{0, 1\}\)
+   - **Interpretation**: \(S_{i,j,k} = 1\) if client \(k\) is visited immediately after client \(j\) by delivery person \(i\), otherwise \(0\).
+
+3. **Route Variables (\(R_{i,j}\))**:
+   - **Definition**: Binary variables indicating whether client \(j\) is included in the route of delivery person \(i\).
+   - **Domain**: \(R_{i,j} \in \{0, 1\}\)
+   - **Interpretation**: \(R_{i,j} = 1\) if client \(j\) is part of delivery person \(i\)'s route, otherwise \(0\).
+
+#### 4.4.2 Constraints
+
+Constraints ensure that the assignments and routes adhere to operational requirements and optimize the delivery process. The primary constraints include:
+
+1. **Assignment Constraints**:
+   - **Each Client is Assigned to Exactly One Delivery Person**:
+     \[
+     \forall j \in \text{Clients}, \quad \sum_{i \in \text{DeliveryPersons}} A_{i,j} = 1
+     \]
+   - **Capacity Constraints**:
+     \[
+     \forall i \in \text{DeliveryPersons}, \quad \sum_{j \in \text{Clients}} w_j \cdot A_{i,j} \leq C_i
+     \]
+     where \(w_j\) is the weight or size of client \(j\)'s order, and \(C_i\) is the capacity of delivery person \(i\).
+
+2. **Sequencing Constraints**:
+   - **Flow Conservation**:
+     \[
+     \forall i \in \text{DeliveryPersons}, \forall j \in \text{Clients}, \quad \sum_{k \in \text{Clients}} S_{i,j,k} = A_{i,j}
+     \]
+     \[
+     \forall i \in \text{DeliveryPersons}, \forall k \in \text{Clients}, \quad \sum_{j \in \text{Clients}} S_{i,j,k} = A_{i,k}
+     \]
+   - **Subtour Elimination**:
+     Implement constraints to prevent the formation of subtours, ensuring that the route is continuous and starts and ends appropriately.
+
+3. **Time Window Constraints**:
+   - Ensure that each delivery is made within the specified time window for each client, considering the predicted street conditions and transit times.
+
+4. **Street Condition Constraints**:
+   - Integrate predictions of street conditions into the route feasibility, such as avoiding routes with high congestion or expected delays.
+
+#### 4.4.3 Constructing the CNF Representation
+
+To utilize GOPHERSAT, the defined variables and constraints must be translated into a CNF format. The following steps outline the process:
+
+1. **Variable Encoding**:
+   - Assign a unique integer identifier to each Boolean variable \(A_{i,j}\), \(S_{i,j,k}\), and \(R_{i,j}\).
+   - Maintain a mapping between variables and their integer identifiers for reference in the CNF clauses.
+
+2. **Clause Generation**:
+   - **Assignment Constraints**:
+     - For each client \(j\), add clauses to ensure that exactly one \(A_{i,j}\) is true.
+     - Example: \(A_{1,j} \lor A_{2,j} \lor \ldots \lor A_{n,j}\)\) and pairwise clauses \(\neg A_{i,j} \lor \neg A_{k,j}\) for \(i \neq k\).
+   
+   - **Capacity Constraints**:
+     - Encode the capacity limitations using clauses that restrict the sum of assigned orders to each delivery person.
+     - This may require auxiliary variables or cardinality constraints supported by GOPHERSAT.
+   
+   - **Sequencing Constraints**:
+     - Encode flow conservation by ensuring that if a delivery person is assigned to a client, there is exactly one preceding and one succeeding client in the route.
+   
+   - **Time Window and Street Condition Constraints**:
+     - Translate temporal and conditional constraints into logical expressions that can be represented in CNF.
+   
+   - **Subtour Elimination**:
+     - Implement additional clauses or use advanced encoding techniques to prevent subtours within the routes.
+
+3. **Generating the CNF File**:
+   - Compile all clauses into a `.cnf` file following the DIMACS format, which includes:
+     - A header specifying the number of variables and clauses.
+     - Each subsequent line representing a clause with space-separated integers ending with `0`.
+
+#### 4.4.4 Developing a Minimal Viable Product (MVP)
+
+To ensure the feasibility and functionality of the proposed optimization framework, developing an MVP is crucial. The MVP should encompass the following steps:
+
+1. **Define a Simplified Scenario**:
+   - Select a small number of delivery personnel and clients to manage complexity.
+   - Use simplified street condition predictions (e.g., binary congested or free-flowing).
+
+2. **Implement Variable Encoding**:
+   - Create a mapping for variables \(A_{i,j}\), \(S_{i,j,k}\), and \(R_{i,j}\) to unique integers.
+
+3. **Formulate Basic Constraints**:
+   - Implement assignment constraints ensuring each client is assigned to one delivery person.
+   - Incorporate basic capacity constraints based on delivery personnel limits.
+
+4. **Generate the CNF File**:
+   - Translate the variables and constraints into CNF clauses.
+   - Ensure the CNF file adheres to the DIMACS format for compatibility with GOPHERSAT.
+
+5. **Run GOPHERSAT and Validate Solutions**:
+   - Execute GOPHERSAT with the generated CNF file.
+   - Verify that the returned solutions satisfy all constraints and optimize the delivery routes as intended.
+
+6. **Iterate and Expand**:
+   - Gradually introduce more variables and constraints, such as sequencing and time windows.
+   - Enhance street condition predictions with more granular data and integrate them into the model.
+
+By following this modeling approach and developing an MVP, the project can systematically address the complexities of delivery route optimization using GOPHERSAT, ensuring both academic rigor and practical applicability.
+
+### 4.5 Implementation Steps for the MVP
+
+To streamline the development process, the following implementation steps are recommended for creating the MVP:
+
+1. **Data Collection and Preprocessing**:
+   - Gather data on delivery personnel, clients, street conditions, and delivery requirements.
+   - Preprocess the data to fit the simplified scenario of the MVP.
+
+2. **Predictive Analytics Integration**:
+   - Utilize the existing ensemble learning models (LightGBM and MLP) to generate initial predictions for street conditions.
+   - For the MVP, use static or simulated predictions to focus on the optimization aspect.
+
+3. **Constraint Modeling and CNF Generation**:
+   - Develop scripts or use existing libraries to encode variables and constraints into CNF format.
+   - Ensure that the CNF generation process is scalable for future iterations.
+
+4. **GOPHERSAT Integration**:
+   - Set up GOPHERSAT and verify its compatibility with the generated CNF files.
+   - Automate the process of running GOPHERSAT and parsing its output for solution extraction.
+
+5. **Solution Evaluation**:
+   - Develop metrics to assess the quality of the solutions provided by GOPHERSAT.
+   - Compare the MVP results with baseline methods to ensure validity.
+
+6. **Documentation and Iteration**:
+   - Document each step of the MVP development for reproducibility.
+   - Use feedback from the MVP to refine the model, variables, and constraints for the full-scale project.
+
 ## 5. Expected Contributions
 This study aims to:
 - Demonstrate the feasibility of using SAT-based solvers for complex route optimization in real-world applications.
