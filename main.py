@@ -41,9 +41,9 @@ def encode_sat(num_livreurs, num_clients, max_time, deadlines, congestion):
 
 # Exemple d'entrée
 num_livreurs = 3
-num_clients = 5
+num_clients = 10
 max_time = 10
-deadlines = [3, 5, 6, 8, 9]
+deadlines = [5, 7, 8, 9, 10, 6, 8, 9, 7, 10]
 congestion = [0, 1, 2, 1, 0, 2, 1, 1, 0, 1]
 
 clauses, A, T = encode_sat(num_livreurs, num_clients, max_time, deadlines, congestion)
