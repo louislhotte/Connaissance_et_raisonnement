@@ -84,8 +84,8 @@ Constraints ensure that the assignments and routes adhere to operational require
 3. **Time Window Constraints**:
    - Ensure that each delivery is made within the specified time window for each client, considering the predicted street conditions and transit times.
 
-4. **Street Condition Constraints**:
-   - Integrate predictions of street conditions into the route feasibility, such as avoiding routes with high congestion or expected delays.
+4. **Deliverer activity range**:
+   - Each worker can only be active once a day for a continuous time period of 4 to 8 hours. (he can't make a delivery 9 hours after the first one)
 
 #### 4.4.3 Constructing the CNF Representation
 
