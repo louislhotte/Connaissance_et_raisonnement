@@ -91,9 +91,10 @@ def encode_sat(num_livreurs, num_clients, max_time, deadlines, congestion_matrix
                     total_hours_count += 1*congestion_matrix[j][t]*alpha
     
     if total_hours_count > max_total_hours:
-        clauses.append([-var for var in total_hours_vars[max_total_hours:]])
+        clauses.append([-var for var in total_hours_vars])
     
     return clauses, A, T
+
 
 # Generate input
 np.random.seed(42)
@@ -122,6 +123,7 @@ for _ in range(5):
     else:
         break
 
+# Calculate hours worked for each solution
 # Function to calculate hours worked per worker
 def calculate_hours_worked(solution, num_livreurs, num_clients, max_time, A, T):
     hours_worked = [0] * num_livreurs
@@ -133,7 +135,6 @@ def calculate_hours_worked(solution, num_livreurs, num_clients, max_time, A, T):
                         hours_worked[i] += 1*congestion_matrix[j][t]*alpha
     return hours_worked
 
-# Calculate hours worked for each solution
 all_hours_worked = []
 for solution in solutions:
     hours_worked = calculate_hours_worked(solution, num_livreurs, num_clients, max_time, A, T)
