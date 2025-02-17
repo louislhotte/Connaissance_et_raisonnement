@@ -1,0 +1,2 @@
+petit A approche initiale spatio temporelle trop complexe
+petit B approche temporelle simplifiée
