@@ -3,6 +3,7 @@ from itertools import product
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Logic of the problem :
 # If a deliverer starts a delivery j at time t, he'll be busy for a time = congestion_matrix[j][t]*alpha hours
@@ -109,7 +110,7 @@ solver = Solver(name='g3')
 for clause in clauses:
     solver.add_clause(clause)
 
-######### VISUALISATION #########
+######### LOAD SOLUTIONS AND HOURS WORKED #########
 
 # Fetch the first 5 possible solutions
 solutions = []
@@ -138,14 +139,69 @@ for solution in solutions:
     hours_worked = calculate_hours_worked(solution, num_livreurs, num_clients, max_time, A, T)
     all_hours_worked.append(hours_worked)
 
-# Plot the cost (hours worked per worker)
-plt.figure(figsize=(10, 6))
-for i, hours_worked in enumerate(all_hours_worked):
-    plt.bar(range(num_livreurs), hours_worked, alpha=0.6, label=f'Solution {i+1}')
+######### PLOT HOURS WORKED #########
 
-plt.xlabel('Livreur')
-plt.ylabel('Heures travaillées')
-plt.title('Heures travaillées par livreur pour chaque solution')
-plt.xticks(range(num_livreurs), [f'Livreur {i}' for i in range(num_livreurs)])
-plt.legend()
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+
+# Seaborn style for better aesthetics
+sns.set_style("whitegrid")
+
+# Define color palette
+colors = sns.color_palette("husl", len(solutions))
+
+# Set figure size
+fig, axes = plt.subplots(1, 2, figsize=(14, 6))  # Two side-by-side plots
+
+# --- 🔹 (1) Hours Worked Per Livreur for Each Solution ---
+bar_width = 0.6 / len(solutions)  # Adjust bar width for multiple solutions
+x = np.arange(num_livreurs)  # X positions for livreurs
+
+for i, hours_worked in enumerate(all_hours_worked):
+    axes[0].bar(
+        x + i * bar_width,  # Offset bars
+        hours_worked, 
+        width=bar_width, 
+        color=colors[i], 
+        alpha=0.85, 
+        label=f'Solution {i+1}', 
+        edgecolor="black"
+    )
+    
+    # Annotate bars with values
+    for j, h in enumerate(hours_worked):
+        axes[0].text(
+            x[j] + i * bar_width, h + 0.3, f"{h:.1f}", 
+            ha='center', fontsize=10, fontweight='bold', color='black'
+        )
+
+# Styling for first plot
+axes[0].set_xlabel('Livreur', fontsize=13, fontweight='bold')
+axes[0].set_ylabel('Heures travaillées', fontsize=13, fontweight='bold')
+axes[0].set_title('🔹 Heures travaillées par livreur 🔹', fontsize=15, fontweight='bold', pad=10)
+axes[0].set_xticks(x + (bar_width * (len(solutions) - 1) / 2))
+axes[0].set_xticklabels([f'Livreur {i}' for i in range(num_livreurs)], fontsize=11)
+axes[0].legend(title="Solutions", fontsize=11, title_fontsize=12, loc='upper right')
+
+# --- 🔹 (2) Total Hours Worked per Solution ---
+total_hours_per_solution = [sum(hours) for hours in all_hours_worked]
+solution_labels = [f'Solution {i+1}' for i in range(len(solutions))]
+
+axes[1].bar(
+    solution_labels, total_hours_per_solution, 
+    color=colors, alpha=0.85, edgecolor="black"
+)
+
+# Annotate bars with values
+for i, total in enumerate(total_hours_per_solution):
+    axes[1].text(i, total + 1, f"{total:.1f}", ha='center', fontsize=12, fontweight='bold', color='black')
+
+# Styling for second plot
+axes[1].set_xlabel('Solution', fontsize=13, fontweight='bold')
+axes[1].set_ylabel('Total Heures', fontsize=13, fontweight='bold')
+axes[1].set_title('🔹 Total Heures travaillées par solution 🔹', fontsize=15, fontweight='bold', pad=10)
+
+# Show final dual-plot figure
+plt.tight_layout()
 plt.show()
