@@ -4,6 +4,13 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Logic of the problem :
+# If a deliverer starts a delivery j at time t, he'll be busy for a time = congestion_matrix[j][t]*alpha hours
+
+# Scaling factor of the congestion
+# Congestion is in range[10, 40]
+alpha = 1/10
+
 # Load data
 predictions = pd.read_csv("predictions.csv", delimiter=";")
 
@@ -29,15 +36,16 @@ def build_congestion_matrix(locations, max_time):
     return congestion_matrix
 
 # Encode the problem in SAT
-def encode_sat(num_livreurs, num_clients, max_time, deadlines, congestion_matrix):
+def encode_sat(num_livreurs, num_clients, max_time, deadlines, congestion_matrix, max_total_hours=40):
     clauses = []
     
     # Variables
     def A(i, j):
-        return i * num_clients + j + 1  # Unique ID for A_ij
+        return i * num_clients + j + 1  # Unique ID for A_ij : livreur i livre le client j
     
     def T(i, j, t):
         return num_livreurs * num_clients + (i * num_clients * max_time) + (j * max_time) + t + 1  # Unique ID for T_ijt
+    # T_ijt : livraison du client j par le livreur i démarre à l'heure t
     
     # Un client est assigné à un seul livreur
     for j in range(num_clients):
@@ -55,15 +63,34 @@ def encode_sat(num_livreurs, num_clients, max_time, deadlines, congestion_matrix
     
     # Respect des deadlines
     for i, j, t in product(range(num_livreurs), range(num_clients), range(max_time)):
-        if t + congestion_matrix[j][t] > deadlines[j]:
+        if t + congestion_matrix[j][t]*alpha > deadlines[j]:
             clauses.append([-T(i, j, t)])
     
     # Pas d'overlap des livraisons pour un livreur
     for i, t in product(range(num_livreurs), range(max_time)):
-        deliveries_at_t = [T(i, j, t) for j in range(num_clients)]
-        for d1, d2 in product(deliveries_at_t, repeat=2):
-            if d1 < d2:
-                clauses.append([-d1, -d2])  # Pas deux livraisons en même temps
+        for j in range(num_clients):
+            start_var = T(i, j, t) 
+            busy_time = int(np.ceil(congestion_matrix[j][t] * alpha))  # Time the deliverer remains busy
+
+            # Prevent other deliveries during the busy period
+            for t_busy in range(t + 1, min(t + busy_time, max_time)):
+                for j2 in range(num_clients):  # Check all possible other deliveries
+                    if j != j2:  # Avoid self-comparison
+                        conflict_var = T(i, j2, t_busy)
+                        clauses.append([-start_var, -conflict_var])  # If `start_var` is true, `conflict_var` must be false
+
+    # Limit total hours worked
+    total_hours_vars = []
+    total_hours_count = 0
+    for i in range(num_livreurs):
+        for j in range(num_clients):
+            for t in range(max_time):
+                if T(i, j, t) > 0:
+                    total_hours_vars.append(T(i, j, t))
+                    total_hours_count += 1*congestion_matrix[j][t]*alpha
+    
+    if total_hours_count > max_total_hours:
+        clauses.append([-var for var in total_hours_vars[max_total_hours:]])
     
     return clauses, A, T
 
@@ -72,14 +99,17 @@ np.random.seed(42)
 num_clients, num_livreurs, max_time, deadlines, locations = generate_data(
     min_clients=5, max_clients=10, min_livreurs=2, max_livreurs=5, min_max_time = 24, max_max_time=48)
 congestion_matrix = build_congestion_matrix(locations, max_time)
+max_total_hours = 40
 
 # Encode
-clauses, A, T = encode_sat(num_livreurs, num_clients, max_time, deadlines, congestion_matrix)
+clauses, A, T = encode_sat(num_livreurs, num_clients, max_time, deadlines, congestion_matrix, max_total_hours)
 
 # Résolution
 solver = Solver(name='g3')
 for clause in clauses:
     solver.add_clause(clause)
+
+######### VISUALISATION #########
 
 # Fetch the first 5 possible solutions
 solutions = []
@@ -99,7 +129,7 @@ def calculate_hours_worked(solution, num_livreurs, num_clients, max_time, A, T):
             if A(i, j) in solution:
                 for t in range(max_time):
                     if T(i, j, t) in solution:
-                        hours_worked[i] += 1
+                        hours_worked[i] += 1*congestion_matrix[j][t]*alpha
     return hours_worked
 
 # Calculate hours worked for each solution
