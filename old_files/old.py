@@ -80,18 +80,11 @@ def encode_sat(num_livreurs, num_clients, max_time, deadlines, congestion_matrix
                         conflict_var = T(i, j2, t_busy)
                         clauses.append([-start_var, -conflict_var])  # If `start_var` is true, `conflict_var` must be false
 
-    # Limit total hours worked
-    total_hours_vars = []
-    total_hours_count = 0
-    for i in range(num_livreurs):
-        for j in range(num_clients):
-            for t in range(max_time):
-                if T(i, j, t) > 0:
-                    total_hours_vars.append(T(i, j, t))
-                    total_hours_count += 1*congestion_matrix[j][t]*alpha
-    
-    if total_hours_count > max_total_hours:
-        clauses.append([-var for var in total_hours_vars])
+    # A worker can't work more than an 8-hour shift (T(i, j, t) -> !T(i, j, t+k) if 12 > k > 8)
+    for i, j, t in product(range(num_livreurs), range(num_clients), range(max_time)):
+        for k in range(8, 13):
+            if t + k < max_time:
+                clauses.append([-T(i, j, t), -T(i, j, t+k)])
     
     return clauses, A, T
 
