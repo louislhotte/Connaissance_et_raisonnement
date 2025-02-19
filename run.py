@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from logic import *
 from scipy.stats import linregress
+import time
 
 
 """
@@ -19,18 +20,22 @@ predictions = pd.read_csv("predictions.csv", delimiter=";")
 ######### GENERATE DATA #########
 
 # Define parameter ranges
-n_clients_range = range(5, 15, 2)
-n_livreurs_range = range(2, 6)
-max_time_range = range(24, 49, 5)
+n_clients_range = range(2, 100, 15)
+n_livreurs_range = range(2, 30, 5)
+max_time_range = range(12, 24*4, 10)
 
 # Number of instances to generate per parameter combination
-num_instances = 3
+num_instances = 10
 
 # Data storage
 solvability_data = []
 
 n_problems = len(n_clients_range) * len(n_livreurs_range) * len(max_time_range) * num_instances
 problem_count=0
+
+# Start timer
+start = time.time()
+
 # Iterate through parameter ranges
 for num_clients in n_clients_range:
     for num_livreurs in n_livreurs_range:
@@ -38,7 +43,14 @@ for num_clients in n_clients_range:
             solvable_count = 0
             for _ in range(num_instances):
                 problem_count+=1
-                print('processing problem {}/{}'.format(problem_count, n_problems), end='\r')
+                if problem_count % 10 == 0:
+                    # Estimate time left
+                    elapsed = time.time() - start
+                    time_per_problem = elapsed/problem_count
+                    remaining = time_per_problem*(n_problems-problem_count)
+                    print('Processing problem {}/{}'.format(problem_count, n_problems),
+                    ' Estimated time left : {:.2f} seconds'.format(remaining), end='\r')
+
                 deadlines = np.random.randint(1, max_time, num_clients)
                 locations = np.random.choice(["Champs-Elysées", "Convention", "Saint-Pères"], num_clients)
 
