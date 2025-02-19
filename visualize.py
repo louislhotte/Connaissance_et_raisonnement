@@ -1,60 +1,79 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy.stats import linregress
+import matplotlib.pyplot as plt
 
+# Load the data
 solvability_data = pd.read_csv('solvability_data.csv').values
 
-# Extract data for plotting
-num_clients_list = np.array([data[0] for data in solvability_data])
-num_livreurs_list = np.array([data[1] for data in solvability_data])
-max_time_list = np.array([data[2] for data in solvability_data])
-solvability_rate_list = np.array([data[3] for data in solvability_data])
+# Create a DataFrame
+data = pd.DataFrame({
+    'num_clients': [data[0] for data in solvability_data],
+    'num_livreurs': [data[1] for data in solvability_data],
+    'max_time': [data[2] for data in solvability_data],
+    'solvability_rate': [data[3] for data in solvability_data]
+})
 
-# Create a figure with subplots
-fig, axes = plt.subplots(1, 3, figsize=(18, 6))
-fig.suptitle('Solvability Rate Analysis', fontsize=16, fontweight='bold')
+# Set up the matplotlib figure
+plt.figure(figsize=(18, 12))
 
-# Plot 1: Solvability Rate vs Number of Clients
-sc1 = axes[0].scatter(num_clients_list, solvability_rate_list, c=max_time_list, cmap='plasma', alpha=0.8, edgecolor='k')
-axes[0].set_xlabel('Number of Clients', fontsize=12)
-axes[0].set_ylabel('Solvability Rate', fontsize=12)
-axes[0].set_title('Solvability Rate vs Number of Clients', fontsize=14)
-cbar1 = fig.colorbar(sc1, ax=axes[0])
-cbar1.set_label('Max Time', fontsize=12)
+# --- 1. Simple Plots: Solvability Rate vs Each Variable (Averaged Over the Other Two) ---
 
-# Add a trend line
-slope, intercept, r_value, _, _ = linregress(num_clients_list, solvability_rate_list)
-axes[0].plot(num_clients_list, intercept + slope * num_clients_list, 'r--', label=f'Trend (R²={r_value**2:.2f})')
-axes[0].legend()
+# Plot 1: Solvability Rate vs Number of Clients (Averaged Over num_livreurs and max_time)
+plt.subplot(2, 3, 1)
+avg_solvability_clients = data.groupby('num_clients')['solvability_rate'].mean()
+sns.lineplot(x=avg_solvability_clients.index, y=avg_solvability_clients.values, marker='o')
+plt.title('Solvability Rate vs Number of Clients\n(Averaged Over Num Livreurs and Max Time)')
+plt.xlabel('Number of Clients')
+plt.ylabel('Solvability Rate')
+plt.grid(True)
 
-# Plot 2: Solvability Rate vs Number of Livreurs
-sc2 = axes[1].scatter(num_livreurs_list, solvability_rate_list, c=max_time_list, cmap='plasma', alpha=0.8, edgecolor='k')
-axes[1].set_xlabel('Number of Livreurs', fontsize=12)
-axes[1].set_ylabel('Solvability Rate', fontsize=12)
-axes[1].set_title('Solvability Rate vs Number of Livreurs', fontsize=14)
-cbar2 = fig.colorbar(sc2, ax=axes[1])
-cbar2.set_label('Max Time', fontsize=12)
+# Plot 2: Solvability Rate vs Number of Livreurs (Averaged Over num_clients and max_time)
+plt.subplot(2, 3, 2)
+avg_solvability_livreurs = data.groupby('num_livreurs')['solvability_rate'].mean()
+sns.lineplot(x=avg_solvability_livreurs.index, y=avg_solvability_livreurs.values, marker='o')
+plt.title('Solvability Rate vs Number of Livreurs\n(Averaged Over Num Clients and Max Time)')
+plt.xlabel('Number of Livreurs')
+plt.ylabel('Solvability Rate')
+plt.grid(True)
 
-# Add a trend line
-slope, intercept, r_value, _, _ = linregress(num_livreurs_list, solvability_rate_list)
-axes[1].plot(num_livreurs_list, intercept + slope * num_livreurs_list, 'r--', label=f'Trend (R²={r_value**2:.2f})')
-axes[1].legend()
+# Plot 3: Solvability Rate vs Max Time (Averaged Over num_clients and num_livreurs)
+plt.subplot(2, 3, 3)
+avg_solvability_time = data.groupby('max_time')['solvability_rate'].mean()
+sns.lineplot(x=avg_solvability_time.index, y=avg_solvability_time.values, marker='o')
+plt.title('Solvability Rate vs Max Time\n(Averaged Over Num Clients and Num Livreurs)')
+plt.xlabel('Max Time')
+plt.ylabel('Solvability Rate')
+plt.grid(True)
 
-# Plot 3: Solvability Rate vs Max Time
-sc3 = axes[2].scatter(max_time_list, solvability_rate_list, c=num_clients_list, cmap='plasma', alpha=0.8, edgecolor='k')
-axes[2].set_xlabel('Max Time', fontsize=12)
-axes[2].set_ylabel('Solvability Rate', fontsize=12)
-axes[2].set_title('Solvability Rate vs Max Time', fontsize=14)
-cbar3 = fig.colorbar(sc3, ax=axes[2])
-cbar3.set_label('Number of Clients', fontsize=12)
+# --- 2. Heatmaps: Solvability Rate vs Pairs of Variables (Averaged Over the Third) ---
 
-# Add a trend line
-slope, intercept, r_value, _, _ = linregress(max_time_list, solvability_rate_list)
-axes[2].plot(max_time_list, intercept + slope * max_time_list, 'r--', label=f'Trend (R²={r_value**2:.2f})')
-axes[2].legend()
+# Heatmap 1: Solvability Rate vs Number of Clients and Number of Livreurs (Averaged Over max_time)
+plt.subplot(2, 3, 4)
+heatmap_data_clients_livreurs = data.groupby(['num_clients', 'num_livreurs'])['solvability_rate'].mean().unstack()
+sns.heatmap(heatmap_data_clients_livreurs, annot=True, fmt=".2f", cmap='coolwarm')
+plt.title('Solvability Rate vs Num Clients and Num Livreurs\n(Averaged Over Max Time)')
+plt.xlabel('Number of Livreurs')
+plt.ylabel('Number of Clients')
 
-# Adjust layout and show plots
+# Heatmap 2: Solvability Rate vs Number of Livreurs and Max Time (Averaged Over num_clients)
+plt.subplot(2, 3, 5)
+heatmap_data_livreurs_time = data.groupby(['num_livreurs', 'max_time'])['solvability_rate'].mean().unstack()
+sns.heatmap(heatmap_data_livreurs_time, annot=True, fmt=".2f", cmap='coolwarm')
+plt.title('Solvability Rate vs Num Livreurs and Max Time\n(Averaged Over Num Clients)')
+plt.xlabel('Max Time')
+plt.ylabel('Number of Livreurs')
+
+# Heatmap 3: Solvability Rate vs Number of Clients and Max Time (Averaged Over num_livreurs)
+plt.subplot(2, 3, 6)
+heatmap_data_clients_time = data.groupby(['num_clients', 'max_time'])['solvability_rate'].mean().unstack()
+sns.heatmap(heatmap_data_clients_time, annot=True, fmt=".2f", cmap='coolwarm')
+plt.title('Solvability Rate vs Num Clients and Max Time\n(Averaged Over Num Livreurs)')
+plt.xlabel('Max Time')
+plt.ylabel('Number of Clients')
+
+# Adjust layout
 plt.tight_layout()
+
+# Show the plots
 plt.show()
