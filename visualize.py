@@ -75,5 +75,9 @@ plt.ylabel('Number of Clients')
 # Adjust layout
 plt.tight_layout()
 
+# Save the plots
+plt.savefig('solvability_visualization.png')
+
 # Show the plots
 plt.show()
+
