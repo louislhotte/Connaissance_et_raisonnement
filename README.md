@@ -1,5 +1,11 @@
 # Connaissance_et_raisonnement
-Repository for course "Connaissance et Raisonnement" from CentraleSupélec (SAT solvers, logic, FOL, etc...). It contains both TDs & the final project.
+Repository for course "Connaissance et Raisonnement" from CentraleSupélec (SAT solvers, logic, FOL, etc...). It contains both TDs & the final project from Louis Lhotte and Edouard Seguier.
+
+### How to run the code :
+- The run.py file, when run, generates multiple problem instances whose solvability is then verified. The results are stored in solvability_data.csv
+- The visualize.py file, when run, generates the visualisation plots from the solvability_data.csv file
+- logic.py contains helper functions and variables/clauses logic
+- To test if a specific problem instance can be solved, we can write the problem as (num_clients, num_livreurs, max_time, deadlines, locations, alpha, predictions) the same way it is done in run.py and call the function check_solvability() on it.
 
 # Optimizing Delivery Planning Allocation Using Predictive Street Analytics and SAT-Based Scheduling
 
